@@ -1,0 +1,6 @@
+0.0.0.0 www.666.com
+114.255.40.66 www.bupt.edu.cn
+0.0.0.0 www.jd.com
+185.199.110.153 iyuhangli.github.io
+13.250.177.223 www.github.com
+10.3.55.56 mail.bupt.edu.cn
