@@ -88,7 +88,7 @@ public class DNSRelay {
 	                	if(Main.debugLevel) {
 	                		cal = Calendar.getInstance();
 	                		Date nowtime = cal.getTime();
-	                		System.out.println("Time at " + time.format(nowtime)+ "ID "+keyy+"from "+resolverAddress+"to "+Main.DNS_IP_ADD+"the data is overtime.");		                    
+	                		System.out.println("Time at " + time.format(nowtime)+ " ID "+keyy+" from "+resolverAddress+" to "+Main.DNS_IP_ADD+" the data is timeout.");		                    
 		                    System.out.println("Values before remove: "+  idMap);
 	                	}
 	                	idMap.remove(keyy);
@@ -425,7 +425,7 @@ public class DNSRelay {
 		socket.send(outPacket);
 		System.out.println("no response: " + idMap.size());
 		timeFlag = true;
-        timer2((int) Convert.byte2Short( sendData ));
+        timer2((int) Convert.byte2Short( sendData ));//SocketTimeoutException can catch the timeout, but we can control time in function timer2
         IPv6_Flag = false;
 		IDTransition idTransition = new IDTransition( (int) Convert.byte2Short( sendData ), resolverPort,  resolverAddress);
 		idMap.put(idTransition.getOldID(), idTransition);
