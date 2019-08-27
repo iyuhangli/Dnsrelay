@@ -10,6 +10,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 public class DNSRelay {
 	//set dns port and local port and data len
 	public static final int DNS_PORT  = 53;
@@ -37,6 +39,10 @@ public class DNSRelay {
 	private Map<Integer ,  IDTransition> idMap = new HashMap<Integer , IDTransition>(); 
 	SimpleDateFormat time=new  SimpleDateFormat("yyyy/MM/dd-HH:mm:ss:SSS");
 	Calendar cal;
+	
+	//To control how many threads, now is 4
+    ExecutorService servicePool = Executors.newFixedThreadPool(1);
+
 	public DNSRelay( ){
 	}	
 	public DNSRelay( Check check){
@@ -101,13 +107,17 @@ public class DNSRelay {
 	    }
 	
 	public void listener( ) throws IOException{
+
 		while (true)  {			
 			socket.receive(inPacket);	//receive udp padcket
 			sendData = inPacket.getData();	//get dns info
-			if (isQuery())
-				handleQuery(); //query
-			else 
-				handleResponse();//response		
+			//Use this to trans DNSRelay object.
+			servicePool.execute(new ThreadsControl(inPacket,this));
+
+//			if (isQuery())
+//				handleQuery(); //query
+//			else 
+//				handleResponse();//response		
 		}	
 	}
 	
@@ -126,7 +136,7 @@ public class DNSRelay {
 		System.out.println(",CLASS:" + Convert.byte2Short(type));
 		resolverAddress  = inPacket.getAddress(); //save source address and port
 		resolverPort  = inPacket.getPort();
-		System.out.println("client ip address: " + resolverAddress);
+		System.out.println("Client ip address: " + resolverAddress);
 		if (_check.ipTable.containsKey(domainNameStr))
 			localDNS( );//find at local domain resolve table
 		else
@@ -139,7 +149,7 @@ public class DNSRelay {
 			timeFlag = false;
 			IDTransition id = idMap.get(responseID);
 			outPacket = new DatagramPacket(sendData, sendData.length, id.getAddr(),  id.getPort());	//   转发收到的远端 DNS 的 response
-			System.out.println("function:response");
+			System.out.println("Function:response");
 			if(Main.debugLevel) {
 				String[] print = new String[outPacket.getLength()/2];
 				int count = 0;
@@ -192,7 +202,6 @@ public class DNSRelay {
 	}
 	
 	public boolean isQuery( ){
-		
 		return ( ( sendData[2] & 0x80 ) == 0x00 );
 	}
 	
