@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 public class DNSRelay {
-	//set dns port and local prot and data len
+	//set dns port and local port and data len
 	public static final int DNS_PORT  = 53;
 	public static final int LOCAL_PORT = 53;	//local listen port
 	private static final int DATA_LEN = 4096;	//package max length
@@ -30,10 +30,8 @@ public class DNSRelay {
 	private InetAddress  resolverAddress;
 
 	private int resolverPort;
-	private boolean IPv6_Flag = false;//if ipv6?
-
+	private boolean IPv6_Flag = false;//is ipv6?
 	int udpCursor;	//to locate of packet to resolve
-
 	int ansCursor;
 	boolean timeFlag = true;
 	private Map<Integer ,  IDTransition> idMap = new HashMap<Integer , IDTransition>(); 
@@ -81,7 +79,7 @@ public class DNSRelay {
 	}
 	
 	//add the situation after data overtime
-	 public void timer2(int key) {
+	public void timer2(int key) {
 	        final int keyy = key;
 	        Timer timer = new Timer();
 	        timer.schedule(new TimerTask() {

@@ -33,13 +33,13 @@ public class Convert {
 	
 	public static short byte2Short( byte[] buf ){
 		
-        int targets = (buf[1] & 0xff) | ((buf[0] << 8) & 0xff00); // | 表示安位或  
+        int targets = (buf[1] & 0xff) | ((buf[0] << 8) & 0xff00);
         return ( short )targets;  
 	}
 	public static String bytesToHex(byte[] bytes) {
         char[] buf = new char[bytes.length * 2];
         int index = 0;
-        for(byte b : bytes) { // 利用位运算进行转换，可以看作方法一的变种
+        for(byte b : bytes) {
             buf[index++] = HEX_CHAR[b >>> 4 & 0xf];
             buf[index++] = HEX_CHAR[b & 0xf];
         }
