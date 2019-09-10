@@ -112,12 +112,12 @@ public class DNSRelay {
 			socket.receive(inPacket);	//receive udp padcket
 			sendData = inPacket.getData();	//get dns info
 			//Use this to trans DNSRelay object.
-			servicePool.execute(new ThreadsControl(inPacket,this));
+			//servicePool.execute(new ThreadsControl(inPacket,this));
 
-//			if (isQuery())
-//				handleQuery(); //query
-//			else 
-//				handleResponse();//response		
+			if (isQuery())
+				handleQuery(); //query
+			else 
+				handleResponse();//response		
 		}	
 	}
 	
@@ -148,14 +148,14 @@ public class DNSRelay {
 		if (idMap.containsKey(responseID)){ 
 			timeFlag = false;
 			IDTransition id = idMap.get(responseID);
-			outPacket = new DatagramPacket(sendData, sendData.length, id.getAddr(),  id.getPort());	//   ×ª·¢ÊÕµ½µÄÔ¶¶Ë DNS µÄ response
+			outPacket = new DatagramPacket(sendData, sendData.length, id.getAddr(),  id.getPort());	//   ×ªï¿½ï¿½ï¿½Õµï¿½ï¿½ï¿½Ô¶ï¿½ï¿½ DNS ï¿½ï¿½ response
 			System.out.println("Function:response");
 			if(Main.debugLevel) {
 				String[] print = new String[outPacket.getLength()/2];
 				int count = 0;
 				int flag;
-				System.out.println("send to :" + id.getAddr());
-				System.out.println("packet:");
+				System.out.println("Send to :" + id.getAddr());
+				System.out.println("Packet:");
 				for(int i = 0 ;i < outPacket.getLength()/2;i++) {
 					flag = 0;
 					print[i] = Convert.bytesToHex(outPacket.getData()).substring(count, count + 2);
@@ -224,8 +224,8 @@ public class DNSRelay {
 			String[] print = new String[outPacket.getLength()/2];
 			int count = 0;
 			int flag;
-			System.out.println("send to :" + resolverAddress);
-			System.out.println("packet:");
+			System.out.println("Send to :" + resolverAddress);
+			System.out.println("Packet:");
 			for(int i = 0 ;i < outPacket.getLength()/2;i++) {
 				flag = 0;
 				print[i] = Convert.bytesToHex(outPacket.getData()).substring(count, count + 2);
@@ -288,8 +288,8 @@ public class DNSRelay {
 			if(Main.debugLevel) {
 				String[] print = new String[2048];
 				int count = 0;
-				System.out.println("send to :" + resolverAddress);
-				System.out.println("packet: ");
+				System.out.println("Send to :" + resolverAddress);
+				System.out.println("Packet: ");
 				for(int i = 0 ;i < Convert.bytesToHex(outPacket.getData()).length()/2;i++) {
 					print[i] = Convert.bytesToHex(outPacket.getData()).substring(count, count + 2);
 					count = count +2;
@@ -327,7 +327,7 @@ public class DNSRelay {
 	}
 	public void setAnswerCount( ){
 		
-		System.out.println("function" + "IPV4 local response");
+		System.out.println("Function: " + "IPV4 local response");
 		//set flag response(flag=0x8180)
 		//set answer count to 1
 		sendData[2]  = (byte) (sendData[2] | 0x85); 
@@ -382,15 +382,15 @@ public class DNSRelay {
 	public void remoteDNS( ) throws IOException{
 		cal = Calendar.getInstance();
 		Date ztime = cal.getTime();
-		System.out.println("function£º" + "send to remote DNS");
-		System.out.println("send time: "  +  time.format(ztime));
+		System.out.println("Function: " + "send to remote DNS");
+		System.out.println("Send time: "  +  time.format(ztime));
 		outPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName(Main.DNS_IP_ADD), DNS_PORT);
 		if(Main.debugLevel) {
 			String[] print = new String[outPacket.getLength()/2];
 			int count = 0;
 			int flag;
-			System.out.println("send to :" + InetAddress.getByName(Main.DNS_IP_ADD));
-			System.out.println("packet:");
+			System.out.println("Send to :" + InetAddress.getByName(Main.DNS_IP_ADD));
+			System.out.println("Packet:");
 			for(int i = 0 ;i < outPacket.getLength()/2;i++) {
 				flag = 0;
 				print[i] = Convert.bytesToHex(outPacket.getData()).substring(count, count + 2);
@@ -432,7 +432,7 @@ public class DNSRelay {
 			System.out.println();
 		}
 		socket.send(outPacket);
-		System.out.println("no response: " + idMap.size());
+		System.out.println("Number of response: " + idMap.size());
 		timeFlag = true;
         timer2((int) Convert.byte2Short( sendData ));//SocketTimeoutException can catch the timeout, but we can control time in function timer2
         IPv6_Flag = false;
