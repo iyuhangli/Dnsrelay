@@ -1,9 +1,11 @@
-import java.io.IOException; 
+import java.io.IOException;
 import java.net.DatagramPacket; 
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -17,12 +19,11 @@ public class DNSRelay {
 	public static final int DNS_PORT  = 53;
 	public static final int LOCAL_PORT = 53;	//local listen port
 	private static final int DATA_LEN = 4096;	//package max length
+	ArrayList<String> buffer = new ArrayList<String>();
 	@SuppressWarnings("unused")
 	private static final CharSequence NULL = null;
-	byte[] inBuff = new byte[DATA_LEN];
 	Check _check;
 	DatagramSocket socket;
-	private DatagramPacket  inPacket = new  DatagramPacket(inBuff,  inBuff.length);	//receive package
 	private DatagramPacket  outPacket;	//send out packet
 	private byte[] sendData;
 	byte[] finalData;
@@ -36,12 +37,9 @@ public class DNSRelay {
 	int udpCursor;	//to locate of packet to resolve
 	int ansCursor;
 	boolean timeFlag = true;
-	private Map<Integer ,  IDTransition> idMap = new HashMap<Integer , IDTransition>(); 
+	private Map<Integer ,IDTransition> idMap = new HashMap<Integer , IDTransition>(); 
 	SimpleDateFormat time=new  SimpleDateFormat("yyyy/MM/dd-HH:mm:ss:SSS");
 	Calendar cal;
-	
-	//To control how many threads, now is 4
-    ExecutorService servicePool = Executors.newFixedThreadPool(1);
 
 	public DNSRelay( ){
 	}	
@@ -107,48 +105,79 @@ public class DNSRelay {
 	    }
 	
 	public void listener( ) throws IOException{
+		//To control how many threads, now is 4
+	    ExecutorService servicePool = Executors.newFixedThreadPool(4);
+	    socket.setSoTimeout(100);
+		while (true)  {
 
-		while (true)  {			
-			socket.receive(inPacket);	//receive udp padcket
-			sendData = inPacket.getData();	//get dns info
-			//Use this to trans DNSRelay object.
-			//servicePool.execute(new ThreadsControl(inPacket,this));
-
-			if (isQuery())
-				handleQuery(); //query
-			else 
-				handleResponse();//response		
+			try {
+				byte[] inBuff = new byte[DATA_LEN];
+				DatagramPacket  inPacket = new  DatagramPacket(inBuff,  inBuff.length);	//receive package
+				socket.receive(inPacket);	//receive udp padcket
+				//Use this to trans DNSRelay object.
+				servicePool.execute(new Runnable() {
+					public void run() {
+						sendData = inPacket.getData();	//get dns info
+						System.out.println("\n\n"+Thread.currentThread().getName());
+						if (isQuery())
+						{
+							cal = Calendar.getInstance();
+							Date receiveTime = cal.getTime();
+							domainNameStr = getDomainName( );//get domain name
+							System.out.println("\nReceive time: " + time.format(receiveTime));
+							System.out.print("Domain name: " + domainNameStr);
+							byte[] type = new byte[2];
+							type[0] = sendData[udpCursor-4];
+							type[1] = sendData[udpCursor-3];
+							System.out.print(",TYPE:" + Convert.byte2Short(type));
+							type[0] = sendData[udpCursor-2];
+							type[1] = sendData[udpCursor-1];
+							System.out.println(",CLASS:" + Convert.byte2Short(type));
+							resolverAddress  = inPacket.getAddress(); //save source address and port
+							resolverPort  = inPacket.getPort();
+							System.out.println("Client ip address: " + resolverAddress);
+							if (_check.ipTable.containsKey(domainNameStr))
+								try {
+									localDNS( );
+								} catch (IOException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+							else
+								try {
+									remoteDNS( );
+								} catch (IOException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}	
+						}
+						else
+							try {
+								handleResponse();
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}//response	
+					}
+				});
+			}catch(SocketTimeoutException e) {
+				//nothing
+			}finally {
+				synchronized(servicePool) {
+					//socket.send(outPacket);
+					
+				}
+			}
 		}	
 	}
 	
-	public void handleQuery( ) throws IOException{
-		cal = Calendar.getInstance();
-		Date receiveTime = cal.getTime();
-		domainNameStr = getDomainName( );//get domain name
-		System.out.println("\nReceive time: " + time.format(receiveTime));
-		System.out.print("Domain name: " + domainNameStr);
-		byte[] type = new byte[2];
-		type[0] = sendData[udpCursor-4];
-		type[1] = sendData[udpCursor-3];
-		System.out.print(",TYPE:" + Convert.byte2Short(type));
-		type[0] = sendData[udpCursor-2];
-		type[1] = sendData[udpCursor-1];
-		System.out.println(",CLASS:" + Convert.byte2Short(type));
-		resolverAddress  = inPacket.getAddress(); //save source address and port
-		resolverPort  = inPacket.getPort();
-		System.out.println("Client ip address: " + resolverAddress);
-		if (_check.ipTable.containsKey(domainNameStr))
-			localDNS( );//find at local domain resolve table
-		else
-			remoteDNS( );	
-	}
-	
+
 	public void handleResponse( ) throws IOException{
 		int responseID = Convert.byte2Short( sendData );
 		if (idMap.containsKey(responseID)){ 
 			timeFlag = false;
 			IDTransition id = idMap.get(responseID);
-			outPacket = new DatagramPacket(sendData, sendData.length, id.getAddr(),  id.getPort());	//   ת���յ���Զ�� DNS �� response
+			outPacket = new DatagramPacket(sendData, sendData.length, id.getAddr(),  id.getPort());	
 			System.out.println("Function:response");
 			if(Main.debugLevel) {
 				String[] print = new String[outPacket.getLength()/2];
